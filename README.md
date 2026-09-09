@@ -48,5 +48,6 @@ npm test
 Dokumentera löpande vad ni gjort och hur ni löst problem.
 
 - Vecka 1: Vi valde projektet bokningssytem då vi helt enkelt kände att det var roligare och passade oss bättre. Vi skapade ett backend repo och överförde grundkoden från kursen. Vi valde React som ramverk då vi använt det tidigare. 
-- Vecka 2: ...
+- Vecka 2: Vi skapade PUT routes för resources samt booking som uppdaterar informationen. Först var vi lite förvirrade hur vi ksulle testa uppdateringen men insåg sen att postman existerar vilket gjorde det mycket enklare att säkerställa att routen uppdaterade istället för att skapa ny.
+Vi gjorde även valet att byta ramverk till Vue istället för react då vi vill utvidga våra kunskaper och ser detta som en bra möjlighet attt göra det.
 - Vecka 3: ...
