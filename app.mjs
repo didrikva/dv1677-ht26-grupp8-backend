@@ -42,6 +42,11 @@ app.get('/resources/:id', async (req, res) => {
     return res.render("resource", { resource, bookings: resourceBookings });
 });
 
+app.put('/resources/:id', async (req, res) => {
+    await resources.updateOne(req.params.id, req.body);
+    return res.redirect(`/resources/${req.params.id}`);
+});
+
 app.get('/resources/:id/edit', async (req, res) => {
     return res.render("resource-form", {
         resource: await resources.getOne(req.params.id)
@@ -63,6 +68,11 @@ app.post('/bookings', async (req, res) => {
 app.delete('/bookings/:id', async (req, res) => {
     const result = await bookings.deleteOne(req.params.id);
     return res.json(result);
+});
+
+app.put('/bookings/:id', async (req, res) => {
+    await bookings.updateOne(req.params.id, req.body);
+    return res.redirect(`/resources/${req.body.resource_id}`);
 });
 
 app.listen(port, () => {
