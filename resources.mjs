@@ -16,6 +16,12 @@ const resources = {
     deleteOne: async function deleteOne(id) {
         const result = db.prepare('DELETE FROM resources WHERE id = ?').run(id);
         return { changes: result.changes };
+    },
+    updateOne: async function updateOne(id, body) {
+        const result = db.prepare(
+            'UPDATE resources SET name = ?, type = ?, description = ?, capacity = ? WHERE id = ?'
+        ).run(body.name, body.type, body.description, body.capacity || 1, id);
+        return { changes: result.changes };
     }
 };
 
