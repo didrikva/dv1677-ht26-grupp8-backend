@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "Starter project for DV1677 JSRamverk – Proxmox booking system",
   "type": "module",
-  "main": "app.mjs",
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node app.mjs"
+    "start": "node app.js"
   },
   "keywords": [],
   "author": "",

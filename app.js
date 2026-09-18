@@ -3,9 +3,9 @@ import express from 'express';
 import path from 'path';
 import morgan from 'morgan';
 import cors from 'cors';
-import resources from "./resources.mjs";
-import bookings from "./bookings.mjs";
-import { connectToDatabase } from "./db/database.mjs";
+import resources from "./resources.js";
+import bookings from "./bookings.js";
+import { connectToDatabase } from "./db/database.js";
 
 const port = process.env.PORT;
 const app = express();

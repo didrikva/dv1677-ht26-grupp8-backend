@@ -32,7 +32,33 @@ npm start
 | Variabel | Beskrivning |
 |----------|-------------|
 | MONGODB_URI | Anslutningssträng till MongoDB |
+| DB_NAME | Namn på MongoDB-databasen |
 | PORT | Port 3000 |
+
+## Databas
+
+Vi använder **MongoDB**, körd som en Docker-container (`docker-compose.yml`).
+
+Starta backend + MongoDB lokalt:
+
+```
+docker compose up -d
+```
+
+Detta startar en `mongodb`-container samt bygger och startar backend-appen (`app`-servicen), som ansluter till `mongodb://mongodb:27017` via `MONGODB_URI`.
+
+Om ni istället kör backend direkt med `npm start` (utan docker-compose), starta bara MongoDB-containern separat:
+
+```
+docker run -d --name mongo -p 27017:27017 mongo:latest
+```
+
+och se till att `.env` innehåller:
+
+```
+MONGODB_URI=mongodb://localhost:27017
+DB_NAME=jsramverk
+```
 
 ## Tester
 

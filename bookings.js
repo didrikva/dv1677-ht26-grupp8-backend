@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { db } from './db/database.mjs';
+import { db } from './db/database.js';
 
 const bookings = {
     getByResource: async function getByResource(resourceId) {
