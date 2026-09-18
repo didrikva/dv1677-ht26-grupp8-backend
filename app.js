@@ -11,8 +11,6 @@ const port = process.env.PORT;
 const app = express();
 
 app.disable('x-powered-by');
-app.set("view engine", "ejs");
-app.use(express.static(path.join(process.cwd(), "public")));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
@@ -23,36 +21,40 @@ if (process.env.NODE_ENV !== 'test') {
 
 // --- Resurser ---
 
-app.get('/', async (req, res) => {
-    return res.render("index", { resources: await resources.getAll() });
+app.get('/resources', async (req, res) => {
+    const result = await resources.getAll();
+    return res.json(result);
 });
 
-app.get('/resources/new', async (req, res) => {
-    return res.render("resource-form", { resource: {} });
-});
+// app.get('/resources/new', async (req, res) => {
+//     return res.render("resource-form", { resource: {} });
+// });
 
 app.post('/resources', async (req, res) => {
-    await resources.addOne(req.body);
-    return res.redirect('/');
+    const result = await resources.addOne(req.body);
+    return res.status(201).json(result);
 });
 
 app.get('/resources/:id', async (req, res) => {
     const resource = await resources.getOne(req.params.id);
     const resourceBookings = await bookings.getByResource(req.params.id);
 
-    return res.render("resource", { resource, bookings: resourceBookings });
+    return res.json({
+        resource,
+        bookings: resourceBookings
+    });
 });
 
 app.put('/resources/:id', async (req, res) => {
-    await resources.updateOne(req.params.id, req.body);
-    return res.redirect(`/resources/${req.params.id}`);
+    const result = await resources.updateOne(req.params.id, req.body);
+    return res.json(result);
 });
 
-app.get('/resources/:id/edit', async (req, res) => {
-    return res.render("resource-form", {
-        resource: await resources.getOne(req.params.id)
-    });
-});
+// app.get('/resources/:id/edit', async (req, res) => {
+//     return res.render("resource-form", {
+//         resource: await resources.getOne(req.params.id)
+//     });
+// });
 
 app.delete('/resources/:id', async (req, res) => {
     const result = await resources.deleteOne(req.params.id);
@@ -62,8 +64,8 @@ app.delete('/resources/:id', async (req, res) => {
 // --- Bokningar ---
 
 app.post('/bookings', async (req, res) => {
-    await bookings.addOne(req.body);
-    return res.redirect(`/resources/${req.body.resource_id}`);
+    const result = await bookings.addOne(req.body);
+    return res.status(201).json(result);
 });
 
 app.delete('/bookings/:id', async (req, res) => {
@@ -72,12 +74,10 @@ app.delete('/bookings/:id', async (req, res) => {
 });
 
 app.put('/bookings/:id', async (req, res) => {
-    await bookings.updateOne(req.params.id, req.body);
-    return res.redirect(`/resources/${req.body.resource_id}`);
+    const result = await bookings.updateOne(req.params.id, req.body);
+    return res.json(result);
 });
 
-connectToDatabase().then(() => {
-    app.listen(port, () => {
-        console.log(`Proxmox Booking app listening on port ${port}`);
-    });
+app.listen(port, () => {
+    console.log(`Proxmox Booking app listening on port ${port}`);
 });

@@ -1,6 +1,7 @@
-import { MongoClient } from 'mongodb';
+import { MongoClient } from "mongodb";
 
 const client = new MongoClient(process.env.MONGODB_URI);
+
 let db;
 
 async function connectToDatabase() {
@@ -9,5 +10,4 @@ async function connectToDatabase() {
     console.log('Connected to MongoDB');
 }
 
-export { connectToDatabase, db };
-
+export default db;

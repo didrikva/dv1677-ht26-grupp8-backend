@@ -66,8 +66,8 @@ npm test
 
 ## Driftsatt
 
-- Backend: https://grupp5.jsramverk.se
-- Frontend: https://grupp5.github.io/dv1677-ht26-grupp5-frontend
+- Backend: https://github.com/didrikva/dv1677-ht26-grupp8-backend
+- Frontend: https://github.com/didrikva/dv1677-ht26-grupp8-frontend
 
 ## Tillvägagångssätt
 
