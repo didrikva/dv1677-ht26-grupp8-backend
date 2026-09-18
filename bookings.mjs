@@ -1,26 +1,39 @@
-import db from './db/database.mjs';
+import { ObjectId } from 'mongodb';
+import { db } from './db/database.mjs';
 
 const bookings = {
     getByResource: async function getByResource(resourceId) {
-        return db.prepare(
-            'SELECT * FROM bookings WHERE resource_id = ? ORDER BY start_time'
-        ).all(resourceId);
+        return db.collection('bookings')
+            .find({ resource_id: new ObjectId(resourceId) })
+            .sort({ start_time: 1 })
+            .toArray();
     },
     addOne: async function addOne(body) {
-        const result = db.prepare(
-            'INSERT INTO bookings (resource_id, user, start_time, end_time, status) VALUES (?, ?, ?, ?, ?)'
-        ).run(body.resource_id, body.user, body.start_time, body.end_time, 'confirmed');
-        return { lastID: result.lastInsertRowid };
+        const result = await db.collection('bookings').insertOne({
+            resource_id: new ObjectId(body.resource_id),
+            user: body.user,
+            start_time: body.start_time,
+            end_time: body.end_time,
+            status: 'confirmed'
+        });
+        return { lastID: result.insertedId };
     },
     deleteOne: async function deleteOne(id) {
-        const result = db.prepare('DELETE FROM bookings WHERE id = ?').run(id);
-        return { changes: result.changes };
+        const result = await db.collection('bookings').deleteOne({ _id: new ObjectId(id) });
+        return { changes: result.deletedCount };
     },
     updateOne: async function updateOne(id, body) {
-        const result = db.prepare(
-            'UPDATE bookings SET resource_id = ?, user = ?, start_time = ?, end_time = ?, status = ? WHERE id = ?'
-        ).run(body.resource_id, body.user, body.start_time, body.end_time, body.status, id);
-        return { changes: result.changes };
+        const result = await db.collection('bookings').updateOne(
+            { _id: new ObjectId(id) },
+            { $set: {
+                resource_id: new ObjectId(body.resource_id),
+                user: body.user,
+                start_time: body.start_time,
+                end_time: body.end_time,
+                status: body.status
+            } }
+        );
+        return { changes: result.modifiedCount };
     }
 };
 

@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import cors from 'cors';
 import resources from "./resources.mjs";
 import bookings from "./bookings.mjs";
+import { connectToDatabase } from "./db/database.mjs";
 
 const port = process.env.PORT;
 const app = express();
@@ -75,6 +76,8 @@ app.put('/bookings/:id', async (req, res) => {
     return res.redirect(`/resources/${req.body.resource_id}`);
 });
 
-app.listen(port, () => {
-    console.log(`Proxmox Booking app listening on port ${port}`);
+connectToDatabase().then(() => {
+    app.listen(port, () => {
+        console.log(`Proxmox Booking app listening on port ${port}`);
+    });
 });
