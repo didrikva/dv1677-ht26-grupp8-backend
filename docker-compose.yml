@@ -8,7 +8,7 @@ services:
       # Läses från .env-fil på VPS (sätts av deploy.yml via GitHub Secret)
       # Fallback: mongodb://mongodb:27017 om secret saknas
       - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017}
-      - DATABASE_NAME=jsramverk
+      - DB_NAME=jsramverk
     depends_on:
       - mongodb
     restart: always
