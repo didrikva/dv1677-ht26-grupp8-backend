@@ -1,0 +1,77 @@
+name: Deploy
+
+on:
+  push:
+    # Under projektet (vecka 6-10) arbetar ni i en dev-branch. Utan dev här
+    # skulle den driftsatta appen stå kvar på vecka 5-koden hela projektet,
+    # eftersom inget mergas till main förrän vid inlämningen.
+    #
+    #   dev  = det som körs och demonstreras under projektet
+    #   main = den släppta versionen
+    branches: [main, dev]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+
+      - run: npm test
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Logga in på ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bygg och pusha image till ghcr.io
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: ghcr.io/didrikva/dv1677-ht26-grupp8-backend:latest
+
+      - name: Kopiera docker-compose.yml till VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: docker-compose.yml
+          target: ~/dv1677-ht26-grupp8-backend/
+
+      - name: Deploya till VPS via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd ~/dv1677-ht26-grupp8-backend
+
+            # Skriv .env-fil med secrets — läses av docker compose vid uppstart
+            # MONGODB_URI: sätt till Atlas-sträng eller mongodb://mongodb:27017 för container
+            echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" > .env
+
+            # Alternativ A: imagen är publik på ghcr.io — ingen inloggning behövs
+            # Gör imagen publik: GitHub -> Packages -> paketet -> Package settings -> Public
+
+            # Alternativ B: imagen är privat — logga in på VPS med GITHUB_TOKEN
+            # echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            docker compose pull
+            docker compose down
+            docker compose up -d

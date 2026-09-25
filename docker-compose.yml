@@ -1,7 +1,7 @@
 services:
   app:
-    image: ghcr.io/<ditt-github-namn>/<repo-namn>:latest
-    container_name: <repo-namn>
+    image: ghcr.io/didrikva/dv1677-ht26-grupp8-backend:latest
+    container_name: dv1677-ht26-grupp8-backend
     ports:
       - '3000:3000'
     environment:

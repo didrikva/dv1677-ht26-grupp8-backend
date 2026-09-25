@@ -77,3 +77,4 @@ Dokumentera löpande vad ni gjort och hur ni löst problem.
 - Vecka 2: Vi skapade PUT routes för resources samt booking som uppdaterar informationen. Först var vi lite förvirrade hur vi ksulle testa uppdateringen men insåg sen att postman existerar vilket gjorde det mycket enklare att säkerställa att routen uppdaterade istället för att skapa ny.
 Vi gjorde även valet att byta ramverk till Vue istället för react då vi vill utvidga våra kunskaper och ser detta som en bra möjlighet attt göra det.
 - Vecka 3: Vi har migrerat databasen från SQLite till MongoDB och är nästan helt klara med vår Docker-uppsättning. Vi inväntar dock fortfarande vår VPS, eftersom vi fixade SSH-nycklarna lite sent. Vi börja ändra mjs filer till js filer samt en mindre grund till api i backend. 
+- Vecka 4: Vi har kopierat testfiler från exempelrepot och anpassat lite, det kommer inte fungera ännu men grunden är på plats och nästa veckas arbete kommer nog det mesta vara fixat.
