@@ -9,6 +9,7 @@ services:
       # Fallback: mongodb://mongodb:27017 om secret saknas
       - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017}
       - DB_NAME=jsramverk
+      - PORT=3000
     depends_on:
       - mongodb
     restart: always

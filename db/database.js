@@ -1,25 +1,28 @@
 import { MongoClient } from "mongodb";
 import "dotenv/config";
 
-const host = process.env.DOCKER_HOSTING ? "mongodb" : "localhost";
-
-const uri = `mongodb://${host}:27017`;
-
-let client = new MongoClient(uri);
+let client;
 
 async function openDb() {
+  if (!client) {
+    const host = process.env.DOCKER_HOSTING ? "mongodb" : "localhost";
+    const uri = process.env.MONGODB_URI || `mongodb://${host}:27017`;
+    client = new MongoClient(uri);
+  }
+
     try {
         await client.connect();
-        return client.db(process.env.DB_NAME);
+    return client.db(process.env.DB_NAME || "jsramverk");
     } catch (error) {
-        console.log("Error connecting to MongoDB:", error);
+    client = undefined;
+    throw error;
     }
 }
 
 const closeDB = async () => {
   if (client) {
     await client.close();
-    client = null;
+    client = undefined;
   }
 };
 

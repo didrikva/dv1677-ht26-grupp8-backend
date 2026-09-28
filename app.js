@@ -78,6 +78,17 @@ app.put('/bookings/:id', async (req, res) => {
     return res.json(result);
 });
 
-app.listen(port, () => {
-    console.log(`Proxmox Booking app listening on port ${port}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+    openDb()
+        .then(() => {
+            app.listen(port, () => {
+                console.log(`Proxmox Booking app listening on port ${port}`);
+            });
+        })
+        .catch((error) => {
+            console.error('Could not connect to MongoDB:', error);
+            process.exitCode = 1;
+        });
+}
+
+export default app;
