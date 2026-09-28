@@ -5,7 +5,7 @@ import morgan from 'morgan';
 import cors from 'cors';
 import resources from "./resources.js";
 import bookings from "./bookings.js";
-import { connectToDatabase } from "./db/database.js";
+import { openDb } from "./db/database.js";
 
 const port = process.env.PORT;
 const app = express();

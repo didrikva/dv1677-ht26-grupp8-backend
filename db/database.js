@@ -1,13 +1,26 @@
 import { MongoClient } from "mongodb";
+import "dotenv/config";
 
-const client = new MongoClient(process.env.MONGODB_URI);
+const host = process.env.DOCKER_HOSTING ? "mongodb" : "localhost";
 
-let db;
+const uri = `mongodb://${host}:27017`;
 
-async function connectToDatabase() {
-    await client.connect();
-    db = client.db(process.env.DB_NAME);
-    console.log('Connected to MongoDB');
+let client = new MongoClient(uri);
+
+async function openDb() {
+    try {
+        await client.connect();
+        return client.db(process.env.DB_NAME);
+    } catch (error) {
+        console.log("Error connecting to MongoDB:", error);
+    }
 }
 
-export default db;
+const closeDB = async () => {
+  if (client) {
+    await client.close();
+    client = null;
+  }
+};
+
+export { openDb, closeDB };
