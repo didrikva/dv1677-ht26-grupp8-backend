@@ -17,7 +17,7 @@
 
     <h3>Ny bokning</h3>
     <form method="POST" action="/bookings" class="booking-form">
-        <input type="hidden" name="resource_id" value="<%= resource.id %>" />
+        <input type="hidden" name="resource_id" value="<%= resource._id %>" />
 
         <label for="user">Användare</label>
         <input type="text" name="user" placeholder="namn@student.bth.se" required />
