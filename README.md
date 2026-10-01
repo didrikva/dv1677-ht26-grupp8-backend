@@ -31,8 +31,8 @@ npm start
 
 | Variabel | Beskrivning |
 |----------|-------------|
-| MONGODB_URI | Anslutningssträng till MongoDB |
-| DB_NAME | Namn på MongoDB-databasen |
+| MONGODB_URI | mongodb://root:secret@localhost:27017/ |
+| DB_NAME | jsramverk |
 | PORT | Port 3000 |
 
 ## Databas
@@ -78,3 +78,5 @@ Dokumentera löpande vad ni gjort och hur ni löst problem.
 Vi gjorde även valet att byta ramverk till Vue istället för react då vi vill utvidga våra kunskaper och ser detta som en bra möjlighet attt göra det.
 - Vecka 3: Vi har migrerat databasen från SQLite till MongoDB och är nästan helt klara med vår Docker-uppsättning. Vi inväntar dock fortfarande vår VPS, eftersom vi fixade SSH-nycklarna lite sent. Vi börja ändra mjs filer till js filer samt en mindre grund till api i backend. 
 - Vecka 4: Vi har kopierat testfiler från exempelrepot och anpassat lite, det kommer inte fungera ännu men grunden är på plats och nästa veckas arbete kommer nog det mesta vara fixat.
+- Vecka 5: Vi gjorde klart backend deployment samt gjorde klart testerna för api-routes. 
+Vi började på frontend deployment och det gick ganska snabbt och enkelt eftersom vi utgick ifrån filerna i kursrepot. 
