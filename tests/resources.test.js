@@ -29,7 +29,7 @@ afterAll(async () => {
 describe('Resources API', () => {
   it('returns an empty JSON array when there are no resources', async () => {
     const response = await request(app)
-      .get('/resources')
+      .get('/api/resources')
       .expect('Content-Type', /json/)
       .expect(200)
 
@@ -38,7 +38,7 @@ describe('Resources API', () => {
 
   it('creates a resource', async () => {
     const response = await request(app)
-      .post('/resources')
+      .post('/api/resources')
       .send({
         name: 'Testserver',
         type: 'server',
@@ -52,7 +52,7 @@ describe('Resources API', () => {
 
   it('returns a resource and its bookings by id', async () => {
     const created = await request(app)
-      .post('/resources')
+      .post('/api/resources')
       .send({
         name: 'Testserver',
         type: 'server',
@@ -62,7 +62,7 @@ describe('Resources API', () => {
       .expect(201)
 
     const response = await request(app)
-      .get(`/resources/${created.body.lastID}`)
+      .get(`/api/resources/${created.body.lastID}`)
       .expect(200)
 
     expect(response.body.resource.name).toBe('Testserver')
