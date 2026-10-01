@@ -66,8 +66,8 @@ npm test
 
 ## Driftsatt
 
-- Backend: https://github.com/didrikva/dv1677-ht26-grupp8-backend
-- Frontend: https://github.com/didrikva/dv1677-ht26-grupp8-frontend
+- Backend: https://dv1677-laforge.nplab.bth.se
+- Frontend: https://jsramverk-ht26.github.io/deploy-example-frontend/api/courses
 
 ## Tillvägagångssätt
 

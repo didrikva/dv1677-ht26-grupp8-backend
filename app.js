@@ -21,7 +21,7 @@ if (process.env.NODE_ENV !== 'test') {
 
 // --- Resurser ---
 
-app.get('/resources', async (req, res) => {
+app.get('/api/resources', async (req, res) => {
     const result = await resources.getAll();
     return res.json(result);
 });
@@ -30,12 +30,12 @@ app.get('/resources', async (req, res) => {
 //     return res.render("resource-form", { resource: {} });
 // });
 
-app.post('/resources', async (req, res) => {
+app.post('/api/resources', async (req, res) => {
     const result = await resources.addOne(req.body);
     return res.status(201).json(result);
 });
 
-app.get('/resources/:id', async (req, res) => {
+app.get('/api/resources/:id', async (req, res) => {
     const resource = await resources.getOne(req.params.id);
     const resourceBookings = await bookings.getByResource(req.params.id);
 
@@ -45,35 +45,35 @@ app.get('/resources/:id', async (req, res) => {
     });
 });
 
-app.put('/resources/:id', async (req, res) => {
+app.put('/api/resources/:id', async (req, res) => {
     const result = await resources.updateOne(req.params.id, req.body);
     return res.json(result);
 });
 
-// app.get('/resources/:id/edit', async (req, res) => {
+// app.get('/api/resources/:id/edit', async (req, res) => {
 //     return res.render("resource-form", {
 //         resource: await resources.getOne(req.params.id)
 //     });
 // });
 
-app.delete('/resources/:id', async (req, res) => {
+app.delete('/api/resources/:id', async (req, res) => {
     const result = await resources.deleteOne(req.params.id);
     return res.json(result);
 });
 
 // --- Bokningar ---
 
-app.post('/bookings', async (req, res) => {
+app.post('/api/bookings', async (req, res) => {
     const result = await bookings.addOne(req.body);
     return res.status(201).json(result);
 });
 
-app.delete('/bookings/:id', async (req, res) => {
+app.delete('/api/bookings/:id', async (req, res) => {
     const result = await bookings.deleteOne(req.params.id);
     return res.json(result);
 });
 
-app.put('/bookings/:id', async (req, res) => {
+app.put('/api/bookings/:id', async (req, res) => {
     const result = await bookings.updateOne(req.params.id, req.body);
     return res.json(result);
 });
