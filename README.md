@@ -31,8 +31,34 @@ npm start
 
 | Variabel | Beskrivning |
 |----------|-------------|
-| MONGODB_URI | Anslutningssträng till MongoDB |
+| MONGODB_URI | mongodb://root:secret@localhost:27017/ |
+| DB_NAME | jsramverk |
 | PORT | Port 3000 |
+
+## Databas
+
+Vi använder **MongoDB**, körd som en Docker-container (`docker-compose.yml`).
+
+Starta backend + MongoDB lokalt:
+
+```
+docker compose up -d
+```
+
+Detta startar en `mongodb`-container samt bygger och startar backend-appen (`app`-servicen), som ansluter till `mongodb://mongodb:27017` via `MONGODB_URI`.
+
+Om ni istället kör backend direkt med `npm start` (utan docker-compose), starta bara MongoDB-containern separat:
+
+```
+docker run -d --name mongo -p 27017:27017 mongo:latest
+```
+
+och se till att `.env` innehåller:
+
+```
+MONGODB_URI=mongodb://localhost:27017
+DB_NAME=jsramverk
+```
 
 ## Tester
 
@@ -40,8 +66,8 @@ npm test
 
 ## Driftsatt
 
-- Backend: https://grupp5.jsramverk.se
-- Frontend: https://grupp5.github.io/dv1677-ht26-grupp5-frontend
+- Backend: https://dv1677-laforge.nplab.bth.se
+- Frontend: https://didrikva.github.io/dv1677-ht26-grupp8-frontend/
 
 ## Tillvägagångssätt
 
@@ -50,4 +76,7 @@ Dokumentera löpande vad ni gjort och hur ni löst problem.
 - Vecka 1: Vi valde projektet bokningssytem då vi helt enkelt kände att det var roligare och passade oss bättre. Vi skapade ett backend repo och överförde grundkoden från kursen. Vi valde React som ramverk då vi använt det tidigare. 
 - Vecka 2: Vi skapade PUT routes för resources samt booking som uppdaterar informationen. Först var vi lite förvirrade hur vi ksulle testa uppdateringen men insåg sen att postman existerar vilket gjorde det mycket enklare att säkerställa att routen uppdaterade istället för att skapa ny.
 Vi gjorde även valet att byta ramverk till Vue istället för react då vi vill utvidga våra kunskaper och ser detta som en bra möjlighet attt göra det.
-- Vecka 3: ...
+- Vecka 3: Vi har migrerat databasen från SQLite till MongoDB och är nästan helt klara med vår Docker-uppsättning. Vi inväntar dock fortfarande vår VPS, eftersom vi fixade SSH-nycklarna lite sent. Vi börja ändra mjs filer till js filer samt en mindre grund till api i backend. 
+- Vecka 4: Vi har kopierat testfiler från exempelrepot och anpassat lite, det kommer inte fungera ännu men grunden är på plats och nästa veckas arbete kommer nog det mesta vara fixat.
+- Vecka 5: Vi gjorde klart backend deployment samt gjorde klart testerna för api-routes. 
+Vi började på frontend deployment och det gick ganska snabbt och enkelt eftersom vi utgick ifrån filerna i kursrepot. Problemet vi fick denna veckan var api. Efter allt var kopplat mellan backend och frontend fungerade allt lokalt. När vi sedan pushat allt och testade på github pages hittade inte frontend några resurser. Problemet? Jo databasen var inte fyllt innuti vpsen vilket ledde till en tom lista som resultat.
