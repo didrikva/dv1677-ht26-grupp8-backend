@@ -67,7 +67,7 @@ npm test
 ## Driftsatt
 
 - Backend: https://dv1677-laforge.nplab.bth.se
-- Frontend: https://jsramverk-ht26.github.io/deploy-example-frontend/api/courses
+- Frontend: https://didrikva.github.io/dv1677-ht26-grupp8-frontend/
 
 ## Tillvägagångssätt
 
@@ -79,4 +79,4 @@ Vi gjorde även valet att byta ramverk till Vue istället för react då vi vill
 - Vecka 3: Vi har migrerat databasen från SQLite till MongoDB och är nästan helt klara med vår Docker-uppsättning. Vi inväntar dock fortfarande vår VPS, eftersom vi fixade SSH-nycklarna lite sent. Vi börja ändra mjs filer till js filer samt en mindre grund till api i backend. 
 - Vecka 4: Vi har kopierat testfiler från exempelrepot och anpassat lite, det kommer inte fungera ännu men grunden är på plats och nästa veckas arbete kommer nog det mesta vara fixat.
 - Vecka 5: Vi gjorde klart backend deployment samt gjorde klart testerna för api-routes. 
-Vi började på frontend deployment och det gick ganska snabbt och enkelt eftersom vi utgick ifrån filerna i kursrepot. 
+Vi började på frontend deployment och det gick ganska snabbt och enkelt eftersom vi utgick ifrån filerna i kursrepot. Problemet vi fick denna veckan var api. Efter allt var kopplat mellan backend och frontend fungerade allt lokalt. När vi sedan pushat allt och testade på github pages hittade inte frontend några resurser. Problemet? Jo databasen var inte fyllt innuti vpsen vilket ledde till en tom lista som resultat.
