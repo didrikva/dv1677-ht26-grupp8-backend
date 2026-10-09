@@ -3,20 +3,27 @@
   "version": "1.0.0",
   "description": "Starter project for DV1677 JSRamverk – Proxmox booking system",
   "type": "module",
-  "main": "app.mjs",
+  "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node app.mjs"
+    "test": "vitest run",
+    "start": "node app.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "better-sqlite3": "^13.0.3",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
     "express": "^4.19.2",
+    "mongodb": "^7.6.0",
     "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^11.3.0",
+    "supertest": "^7.3.0",
+    "vitest": "^5.0.2"
   }
 }
