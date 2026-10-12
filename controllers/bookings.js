@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb'
-import { openDb } from './db/database.js';
+import { openDb } from '../db/database.js';
 import { broker, BrokerError } from '../config/broker.js'
 
 export async function createBooking(req, res) {
