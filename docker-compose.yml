@@ -10,6 +10,8 @@ services:
       - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017}
       - DB_NAME=jsramverk
       - PORT=3000
+      - BROKER_API_URL=${BROKER_API_URL}
+      - BROKER_GROUP_TOKEN=${BROKER_GROUP_TOKEN}
     depends_on:
       - mongodb
     restart: always
