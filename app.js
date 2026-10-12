@@ -3,6 +3,7 @@ import cors from 'cors'
 import bookings from './routes/bookings.js'
 import resources from './routes/resources.js'
 import { openDb } from "./db/database.js";
+import { syncResources } from './domain/syncResources.js';
 
 const app = express()
 const port = process.env.PORT;
@@ -13,12 +14,16 @@ app.use(express.json())
 
 app.use(bookings)
 app.use(resources)
-    
+
 if (process.env.NODE_ENV !== 'test') {
     openDb()
         .then(() => {
             app.listen(port, () => {
                 console.log(`Proxmox Booking app listening on port ${port}`);
+
+                syncResources().catch((error) => {
+                    console.error('Resource synchronization failed:', error);
+                });
             });
         })
         .catch((error) => {
