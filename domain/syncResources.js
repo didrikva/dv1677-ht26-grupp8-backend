@@ -1,8 +1,8 @@
-import { getDB } from '../db/database.js'
+import { openDb } from '../db/database.js'
 import { broker } from '../config/broker.js'
 
 export async function syncResources() {
-  const db = getDB()
+  const db = await openDb()
   const sources = { proxmox: 'nodes', maas: 'machines', openstack: 'projects' }
 
   for (const [provider, key] of Object.entries(sources)) {
