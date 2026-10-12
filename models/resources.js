@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { openDb } from './db/database.js';
+import { openDb } from '../db/database.js';
 
 const resources = {
     getAll: async function getAll() {
