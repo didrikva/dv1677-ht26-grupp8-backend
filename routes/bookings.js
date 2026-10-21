@@ -4,7 +4,7 @@ import { createBooking, cancelBooking } from '../controllers/bookings.js'
 
 const router = express.Router();
 
-router.post('/v1/bookings', createBooking);
-router.delete('/v1/bookings/:id', cancelBooking);
+router.post('/api/bookings', createBooking);
+router.delete('/api/bookings/:id', cancelBooking);
 
 export default router
