@@ -6,6 +6,8 @@ import cors from 'cors';
 import resources from "./resources.js";
 import bookings from "./bookings.js";
 import { openDb } from "./db/database.js";
+import authRoutes from "./routes/auth.js";
+import { requireAuth } from "./middleware/auth.js";
 
 const port = process.env.PORT;
 const app = express();
@@ -19,6 +21,10 @@ if (process.env.NODE_ENV !== 'test') {
     app.use(morgan('combined'));
 }
 
+// --- Autentisering ---
+
+app.use('/api/auth', authRoutes);
+
 // --- Resurser ---
 
 app.get('/api/resources', async (req, res) => {
@@ -30,7 +36,7 @@ app.get('/api/resources', async (req, res) => {
 //     return res.render("resource-form", { resource: {} });
 // });
 
-app.post('/api/resources', async (req, res) => {
+app.post('/api/resources', requireAuth, async (req, res) => {
     const result = await resources.addOne(req.body);
     return res.status(201).json(result);
 });
@@ -45,7 +51,7 @@ app.get('/api/resources/:id', async (req, res) => {
     });
 });
 
-app.put('/api/resources/:id', async (req, res) => {
+app.put('/api/resources/:id', requireAuth, async (req, res) => {
     const result = await resources.updateOne(req.params.id, req.body);
     return res.json(result);
 });
@@ -56,29 +62,45 @@ app.put('/api/resources/:id', async (req, res) => {
 //     });
 // });
 
-app.delete('/api/resources/:id', async (req, res) => {
+app.delete('/api/resources/:id', requireAuth, async (req, res) => {
     const result = await resources.deleteOne(req.params.id);
     return res.json(result);
 });
 
 // --- Bokningar ---
 
-app.post('/api/bookings', async (req, res) => {
-    const result = await bookings.addOne(req.body);
-    return res.status(201).json(result);
-});
-
-app.delete('/api/bookings/:id', async (req, res) => {
-    const result = await bookings.deleteOne(req.params.id);
+app.get('/api/bookings/mine', requireAuth, async (req, res) => {
+    const result = await bookings.getByUser(req.user.id);
     return res.json(result);
 });
 
-app.put('/api/bookings/:id', async (req, res) => {
-    const result = await bookings.updateOne(req.params.id, req.body);
+app.post('/api/bookings', requireAuth, async (req, res) => {
+    const result = await bookings.addOne(req.body, req.user.id);
+    return res.status(201).json(result);
+});
+
+app.delete('/api/bookings/:id', requireAuth, async (req, res) => {
+    const result = await bookings.deleteOne(req.params.id, req.user.id);
+    if (result.changes === 0) {
+        return res.status(404).json({ error: 'Hittades inte' });
+    }
+    return res.json(result);
+});
+
+app.put('/api/bookings/:id', requireAuth, async (req, res) => {
+    const result = await bookings.updateOne(req.params.id, req.body, req.user.id);
+    if (result.changes === 0) {
+        return res.status(404).json({ error: 'Hittades inte' });
+    }
     return res.json(result);
 });
 
 if (process.env.NODE_ENV !== 'test') {
+    if (!process.env.JWT_SECRET) {
+        console.error('JWT_SECRET saknas. Lägg den i .env eller som miljövariabel.');
+        process.exit(1);
+    }
+
     openDb()
         .then(() => {
             app.listen(port, () => {

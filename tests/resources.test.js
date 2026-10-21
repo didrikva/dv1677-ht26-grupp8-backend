@@ -6,17 +6,24 @@ import { closeDB, openDb } from '../db/database.js'
 
 let mongoServer
 let db
+let token
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create()
   process.env.MONGODB_URI = mongoServer.getUri()
   process.env.DB_NAME = 'jsramverk_test'
+  process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
   db = await openDb()
 })
 
 beforeEach(async () => {
   await db.collection('resources').deleteMany({})
   await db.collection('bookings').deleteMany({})
+  await db.collection('users').deleteMany({})
+
+  await request(app).post('/api/auth/register').send({ email: 'a@b.se', password: 'hemligt' })
+  const login = await request(app).post('/api/auth/login').send({ email: 'a@b.se', password: 'hemligt' })
+  token = login.body.token
 })
 
 afterAll(async () => {
@@ -39,6 +46,7 @@ describe('Resources API', () => {
   it('creates a resource', async () => {
     const response = await request(app)
       .post('/api/resources')
+      .set('Authorization', `Bearer ${token}`)
       .send({
         name: 'Testserver',
         type: 'server',
@@ -53,6 +61,7 @@ describe('Resources API', () => {
   it('returns a resource and its bookings by id', async () => {
     const created = await request(app)
       .post('/api/resources')
+      .set('Authorization', `Bearer ${token}`)
       .send({
         name: 'Testserver',
         type: 'server',

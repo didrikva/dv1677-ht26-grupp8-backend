@@ -8,6 +8,7 @@ services:
       # Läses från .env-fil på VPS (sätts av deploy.yml via GitHub Secret)
       # Fallback: mongodb://mongodb:27017 om secret saknas
       - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017}
+      - JWT_SECRET=${JWT_SECRET}
       - DB_NAME=jsramverk
       - PORT=3000
     depends_on:
