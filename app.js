@@ -2,20 +2,40 @@ import express from 'express'
 import cors from 'cors'
 import bookings from './routes/bookings.js'
 import resources from './routes/resources.js'
-import { openDb } from "./db/database.js";
-import { syncResources } from './domain/syncResources.js';
+import auth from './routes/auth.js'
+import { syncResources } from './domain/syncResources.js'
+import { openDb } from './db/database.js'
 
 const app = express()
-const port = process.env.PORT;
+const port = process.env.PORT
 
-app.use(cors())
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://dv1677-laforge.nplab.bth.se'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}))
+
+app.use((req, res, next) => {
+  req.io = app.get('io')
+  next()
+})
+
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 
 app.use(bookings)
 app.use(resources)
+app.use(auth)
 
 if (process.env.NODE_ENV !== 'test') {
+    if (!process.env.JWT_SECRET) {
+        console.error('JWT_SECRET saknas. Lägg den i .env eller som miljövariabel.');
+        process.exit(1);
+    }
+
     openDb()
         .then(() => {
             app.listen(port, () => {

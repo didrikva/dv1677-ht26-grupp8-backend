@@ -23,6 +23,8 @@ jobs:
       - run: npm ci
 
       - run: npm test
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -71,6 +73,7 @@ jobs:
             echo "BROKER_API_URL=http://194.47.155.214:8500" >> .env
             echo "BROKER_GROUP_TOKEN=${{ secrets.BROKER_GROUP_TOKEN }}" >> .env
             echo "DB_NAME=jsramverk" >> .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
 
             # Alternativ A: imagen är publik på ghcr.io — ingen inloggning behövs
             # Gör imagen publik: GitHub -> Packages -> paketet -> Package settings -> Public
