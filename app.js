@@ -2,13 +2,12 @@ import express from 'express'
 import cors from 'cors'
 import bookings from './routes/bookings.js'
 import resources from './routes/resources.js'
+import auth from './routes/auth.js'
 import { syncResources } from './domain/syncResources.js'
+import { openDb } from './db/database.js'
 
 const app = express()
 const port = process.env.PORT
-
-app.use(bookings)
-app.use(resources)
 
 app.use(cors({
   origin: [
@@ -29,6 +28,7 @@ app.use(express.json())
 
 app.use(bookings)
 app.use(resources)
+app.use(auth)
 
 if (process.env.NODE_ENV !== 'test') {
     if (!process.env.JWT_SECRET) {

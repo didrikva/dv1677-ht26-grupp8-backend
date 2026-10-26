@@ -1,10 +1,12 @@
 import express from 'express'
-import { createBooking, cancelBooking } from '../controllers/bookings.js'
-// import { jwtMiddleware } from '../middleware/jwt-middleware.js'
+import { createBooking, cancelBooking, getMyBookings, updateBooking } from '../controllers/bookings.js'
+import { requireAuth } from '../middleware/auth.js'
 
 const router = express.Router();
 
-router.post('/api/bookings', createBooking);
-router.delete('/api/bookings/:id', cancelBooking);
+router.post('/api/bookings', requireAuth, createBooking)
+router.get('/api/bookings/mine', requireAuth, getMyBookings)
+router.put('/api/bookings/:id', requireAuth, updateBooking)
+router.delete('/api/bookings/:id', requireAuth, cancelBooking)
 
 export default router
