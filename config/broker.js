@@ -26,7 +26,14 @@ async function call(path, { method = 'GET', body, secret } = {}) {
   }
 
   const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new BrokerError(res.status, data.code, data.error)
+  if (!res.ok) {
+    console.error('Broker response:', {
+      status: res.status,
+      body: data
+    })
+
+    throw new BrokerError(res.status, data.code, data.error)
+  }
   return data
 }
 
