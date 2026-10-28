@@ -8,6 +8,19 @@ export async function createBooking(req, res) {
   const endsAt = req.body.endsAt ?? req.body.end_time
   const { want } = req.body
   const db = await openDb()
+  let resource
+
+  try {
+    resource = await db.collection('resources').findOne({
+      _id: new ObjectId(resourceId)
+    })
+  } catch {
+    return res.status(400).json({ error: 'Invalid resource ID' })
+  }
+
+  if (!resource) {
+    return res.status(404).json({ error: 'Resource not found' })
+  }
   const provider = resource.provider ?? resource.type
 
   if (!provider) {
@@ -16,45 +29,58 @@ export async function createBooking(req, res) {
     })
   }
 
-  const resource = await db.collection('resources').findOne({ _id: new ObjectId(resourceId) })
-  if (!resource) return res.status(404).json({ error: 'Resource not found' })
-
   const bookingId = new ObjectId()
   const user = String(req.user._id)
   const payload = provider === 'maas'
-  ? {
-      systemId: resource.externalId,
-      user,
-      startsAt,
-      endsAt,
-      idempotencyKey: String(bookingId)
-    }
-  : {
-      want,
-      user,
-      startsAt,
-      endsAt,
-      idempotencyKey: String(bookingId)
-    }
-    ? { systemId: resource.externalId, user, startsAt, endsAt, idempotencyKey: String(bookingId) }
-    : { want, user, startsAt, endsAt, idempotencyKey: String(bookingId) }
+    ? {
+        systemId: resource.externalId,
+        user,
+        startsAt,
+        endsAt,
+        idempotencyKey: String(bookingId)
+      }
+    : {
+        want,
+        user,
+        startsAt,
+        endsAt,
+        idempotencyKey: String(bookingId)
+      }
 
   try {
     const { allocation } = await broker.allocate(provider, payload)
 
     const booking = {
-      _id: bookingId, resourceId: resource._id, bookedBy: req.user._id,
-      startsAt: new Date(startsAt), endsAt: new Date(endsAt), status: 'confirmed',
+      _id: bookingId,
+      resourceId: resource._id,
+      bookedBy: req.user._id,
+      startsAt: new Date(startsAt),
+      endsAt: new Date(endsAt),
+      status: 'confirmed'
     }
     await db.collection('bookings').insertOne({
       ...booking,
-      broker: { allocationId: allocation.id, secret: allocation.secret },
+      broker: {
+        allocationId: allocation.id,
+        secret: allocation.secret
+      }
     })
+
     return res.status(201).json(booking)
   } catch (err) {
     if (!(err instanceof BrokerError)) throw err
-    if (err.status === 409) return res.status(409).json({ error: 'Booking denied', code: err.code })
-    return res.status(503).json({ error: 'Booking service unavailable', code: err.code })
+
+    if (err.status === 409) {
+      return res.status(409).json({
+        error: 'Booking denied',
+        code: err.code
+      })
+    }
+
+    return res.status(503).json({
+      error: 'Booking service unavailable',
+      code: err.code
+    })
   }
 }
 
