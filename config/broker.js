@@ -7,33 +7,42 @@ const headers = {
 export class BrokerError extends Error {
   constructor(status, code, message) {
     super(message)
-    this.status = status   // HTTP-status från brokern (0 = ingen kontakt)
-    this.code = code       // t.ex. 'CAPACITY_EXCEEDED'
+    this.status = status
+    this.code = code
   }
 }
 
 async function call(path, { method = 'GET', body, secret } = {}) {
+  const url = `${BASE}${path}`
+  console.log('Broker request:', method, url)
+
   let res
+
   try {
-    res = await fetch(`${BASE}${path}`, {
+    res = await fetch(url, {
       method,
-      headers: secret ? { ...headers, 'X-Booker-Allocation-Secret': secret } : headers,
+      headers: secret
+        ? { ...headers, 'X-Booker-Allocation-Secret': secret }
+        : headers,
       body: body && JSON.stringify(body),
-      signal: AbortSignal.timeout(5000),   // utan timeout hänger er request när brokern ligger nere
+      signal: AbortSignal.timeout(5000),
     })
   } catch (err) {
     throw new BrokerError(0, 'UNREACHABLE', err.message)
   }
 
   const data = await res.json().catch(() => ({}))
+
   if (!res.ok) {
     console.error('Broker response:', {
+      url,
       status: res.status,
-      body: data
+      body: data,
     })
 
     throw new BrokerError(res.status, data.code, data.error)
   }
+
   return data
 }
 

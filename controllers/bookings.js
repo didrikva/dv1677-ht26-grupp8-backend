@@ -29,7 +29,7 @@ export async function createBooking(req, res) {
       ...booking,
       broker: { allocationId: allocation.id, secret: allocation.secret },
     })
-    return res.status(201).json(booking)   // secret finns bara i databasen, aldrig i svaret
+    return res.status(201).json(booking)
   } catch (err) {
     if (!(err instanceof BrokerError)) throw err
     if (err.status === 409) return res.status(409).json({ error: 'Booking denied', code: err.code })
