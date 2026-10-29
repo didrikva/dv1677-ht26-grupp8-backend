@@ -8,6 +8,26 @@ function formatBooking(resource, startsAt, endsAt) {
   return `${name}\n${new Date(startsAt).toISOString()} – ${new Date(endsAt).toISOString()}`
 }
 
+// Mongo-varianten av overlappar(): start_a < slut_b OCH start_b < slut_a
+function findConflict(db, resourceId, startsAt, endsAt, excludeId) {
+  const query = {
+    resourceId,
+    status: { $ne: 'cancelled' },
+    startsAt: { $lt: endsAt },
+    endsAt: { $gt: startsAt }
+  }
+
+  if (excludeId) query._id = { $ne: excludeId }
+
+  return db.collection('bookings').findOne(query)
+}
+
+function validInterval(start, end) {
+  return !Number.isNaN(start.getTime()) &&
+    !Number.isNaN(end.getTime()) &&
+    start < end
+}
+
 export async function createBooking(req, res) {
   const resourceId = req.body.resourceId ?? req.body.resource_id
   const startsAt = req.body.startsAt ?? req.body.start_time
@@ -32,6 +52,26 @@ export async function createBooking(req, res) {
   if (!provider) {
     return res.status(400).json({
       error: 'Resource has no provider or type'
+    })
+  }
+
+  if (!validInterval(new Date(startsAt), new Date(endsAt))) {
+    return res.status(400).json({
+      error: 'Invalid time interval: start must be before end'
+    })
+  }
+
+  const conflict = await findConflict(
+    db,
+    resource._id,
+    new Date(startsAt),
+    new Date(endsAt)
+  )
+
+  if (conflict) {
+    return res.status(409).json({
+      error: 'Tiden är redan bokad',
+      krockarMed: conflict._id
     })
   }
 
@@ -210,6 +250,30 @@ export async function updateBooking(req, res) {
 
   if (Object.keys(updates).length === 0) {
     return res.status(400).json({ error: 'No valid fields to update' })
+  }
+
+  const newStart = updates.startsAt ?? booking.startsAt
+  const newEnd = updates.endsAt ?? booking.endsAt
+
+  if (!validInterval(newStart, newEnd)) {
+    return res.status(400).json({
+      error: 'Invalid time interval: start must be before end'
+    })
+  }
+
+  const conflict = await findConflict(
+    db,
+    booking.resourceId,
+    newStart,
+    newEnd,
+    bookingId
+  )
+
+  if (conflict) {
+    return res.status(409).json({
+      error: 'Tiden är redan bokad',
+      krockarMed: conflict._id
+    })
   }
 
   await db.collection('bookings').updateOne(
