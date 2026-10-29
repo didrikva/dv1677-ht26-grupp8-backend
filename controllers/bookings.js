@@ -102,6 +102,11 @@ export async function createBooking(req, res) {
         bookedBy: req.user._id,
         startsAt: new Date(startsAt),
         endsAt: new Date(endsAt),
+        amount_cpu: Number(want?.vcpus ?? 0),
+        amount_ram: Number(want?.ramMb ?? 0),
+      ...(want?.diskGb != null
+        ? { amount_disk: Number(want.diskGb) }
+        : {}),
         status: 'confirmed'
       }
       const bookingDocument = {
