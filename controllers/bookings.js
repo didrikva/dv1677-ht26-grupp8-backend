@@ -1,6 +1,12 @@
 import { ObjectId } from 'mongodb'
 import { openDb } from '../db/database.js';
 import { broker, BrokerError } from '../config/broker.js'
+import { notifiera } from '../services/notify.js'
+
+function formatBooking(resource, startsAt, endsAt) {
+  const name = resource?.name ?? 'Okänd resurs'
+  return `${name}\n${new Date(startsAt).toISOString()} – ${new Date(endsAt).toISOString()}`
+}
 
 export async function createBooking(req, res) {
   const resourceId = req.body.resourceId ?? req.body.resource_id
@@ -65,6 +71,9 @@ export async function createBooking(req, res) {
         secret: allocation.secret
       }
     })
+
+    // Ingen await: notisen ska inte sinka svaret (notifiera fångar alla fel själv)
+    notifiera('Bokning bekräftad', formatBooking(resource, booking.startsAt, booking.endsAt), 0x2ecc71)
 
     return res.status(201).json(booking)
   } catch (err) {
@@ -143,6 +152,8 @@ export async function cancelBooking(req, res) {
       $set: { status: 'cancelled' }
     }
   )
+
+  notifiera('Bokning avbokad', formatBooking(resource, booking.startsAt, booking.endsAt), 0xe74c3c)
 
   return res.json({ message: 'Booking cancelled' })
 }
