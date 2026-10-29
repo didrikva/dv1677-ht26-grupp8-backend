@@ -19,6 +19,7 @@ let mongoServer
 let db
 let token
 let resource
+let shared
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create()
@@ -38,9 +39,14 @@ beforeEach(async () => {
   token = login.body.token
 
   resource = await db.collection('resources').insertOne({
-    name: 'Test resource',
+    name: 'Test machine',
+    provider: 'maas',
+    externalId: 'test-machine'
+  })
+  shared = await db.collection('resources').insertOne({
+    name: 'Test node',
     provider: 'proxmox',
-    externalId: 'test-resource'
+    externalId: 'test-node'
   })
 })
 
@@ -59,6 +65,16 @@ function book(startH, endH) {
 }
 
 describe('Booking overlap', () => {
+  it('leaves overlap on shareable resources (proxmox) to the broker', async () => {
+    const bookShared = () => request(app)
+      .post('/api/bookings')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ resourceId: String(shared.insertedId), startsAt: at(10), endsAt: at(12), want: {} })
+
+    await bookShared().expect(201)
+    await bookShared().expect(201)
+  })
+
   it('returns 409 with krockarMed for an overlapping booking', async () => {
     const first = await book(10, 12).expect(201)
     const res = await book(11, 13).expect(409)

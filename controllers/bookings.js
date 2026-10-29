@@ -28,6 +28,12 @@ function validInterval(start, end) {
     start < end
 }
 
+// Bara MAAS är odelbar (en bokning åt gången). Proxmox och OpenStack är
+// delbara: där avgör brokern kapaciteten (CAPACITY_EXCEEDED), inte vi.
+function isExclusive(resource) {
+  return (resource?.provider ?? resource?.type) === 'maas'
+}
+
 export async function createBooking(req, res) {
   const resourceId = req.body.resourceId ?? req.body.resource_id
   const startsAt = req.body.startsAt ?? req.body.start_time
@@ -61,12 +67,14 @@ export async function createBooking(req, res) {
     })
   }
 
-  const conflict = await findConflict(
-    db,
-    resource._id,
-    new Date(startsAt),
-    new Date(endsAt)
-  )
+  const conflict = isExclusive(resource)
+    ? await findConflict(
+        db,
+        resource._id,
+        new Date(startsAt),
+        new Date(endsAt)
+      )
+    : null
 
   if (conflict) {
     return res.status(409).json({
@@ -266,13 +274,19 @@ export async function updateBooking(req, res) {
     })
   }
 
-  const conflict = await findConflict(
-    db,
-    booking.resourceId,
-    newStart,
-    newEnd,
-    bookingId
-  )
+  const resource = await db.collection('resources').findOne({
+    _id: booking.resourceId
+  })
+
+  const conflict = isExclusive(resource)
+    ? await findConflict(
+        db,
+        booking.resourceId,
+        newStart,
+        newEnd,
+        bookingId
+      )
+    : null
 
   if (conflict) {
     return res.status(409).json({
