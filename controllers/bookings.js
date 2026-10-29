@@ -57,25 +57,34 @@ export async function createBooking(req, res) {
     const { allocation } = await broker.allocate(provider, payload)
 
     const booking = {
-      _id: bookingId,
-      resourceId: resource._id,
-      bookedBy: req.user._id,
-      startsAt: new Date(startsAt),
-      endsAt: new Date(endsAt),
-      status: 'confirmed'
-    }
-    await db.collection('bookings').insertOne({
-      ...booking,
-      broker: {
-        allocationId: allocation.id,
-        secret: allocation.secret
+        _id: bookingId,
+        resourceId: resource._id,
+        bookedBy: req.user._id,
+        startsAt: new Date(startsAt),
+        endsAt: new Date(endsAt),
+        status: 'confirmed'
       }
-    })
+      const bookingDocument = {
+    ...booking,
+    broker: {
+      allocationId: allocation.id,
+      secret: allocation.secret
+    }
+  }
 
-    // Ingen await: notisen ska inte sinka svaret (notifiera fångar alla fel själv)
-    notifiera('Bokning bekräftad', formatBooking(resource, booking.startsAt, booking.endsAt), 0x2ecc71)
+  await db.collection('bookings').insertOne(bookingDocument)
 
-    return res.status(201).json(booking)
+  // Skicka till alla som tittar på den här resursen
+  if (req.io) {
+    req.io
+      .to(`resource:${String(resource._id)}`)
+      .emit('booking:created', booking)
+  }
+
+  // Ingen await: notisen ska inte sinka svaret (notifiera fångar alla fel själv)
+  notifiera('Bokning bekräftad', formatBooking(resource, booking.startsAt, booking.endsAt), 0x2ecc71)
+
+  return res.status(201).json(booking)
   } catch (err) {
     if (!(err instanceof BrokerError)) throw err
 
