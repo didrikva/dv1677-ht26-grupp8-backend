@@ -3,11 +3,8 @@ import cors from 'cors'
 import bookings from './routes/bookings.js'
 import resources from './routes/resources.js'
 import auth from './routes/auth.js'
-import { syncResources } from './domain/syncResources.js'
-import { openDb } from './db/database.js'
 
 const app = express()
-const port = process.env.PORT
 
 app.use(cors({
   origin: [
@@ -29,28 +26,6 @@ app.use(express.json())
 app.use(bookings)
 app.use(resources)
 app.use(auth)
-
-if (process.env.NODE_ENV !== 'test') {
-    if (!process.env.JWT_SECRET) {
-        console.error('JWT_SECRET saknas. Lägg den i .env eller som miljövariabel.');
-        process.exit(1);
-    }
-
-    openDb()
-        .then(() => {
-            app.listen(port, () => {
-                console.log(`Proxmox Booking app listening on port ${port}`);
-
-                syncResources().catch((error) => {
-                    console.error('Resource synchronization failed:', error);
-                });
-            });
-        })
-        .catch((error) => {
-            console.error('Could not connect to MongoDB:', error);
-            process.exitCode = 1;
-        });
-}
 
 export default app;
 

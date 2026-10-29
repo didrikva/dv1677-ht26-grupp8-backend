@@ -18,9 +18,9 @@ app.set('io', io);
 io.on('connection', (socket) => {
   console.log('ansluten:', socket.id);
 
-  socket.on('join', (rum) => {
-    socket.join(rum);
-  });
+  socket.on('join', (resourceId) => {
+    socket.join(`resource:${resourceId}`)
+  })
 
   socket.on('disconnect', () => {
     console.log('frånkopplad:', socket.id);
