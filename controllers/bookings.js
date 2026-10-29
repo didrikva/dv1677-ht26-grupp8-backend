@@ -2,6 +2,57 @@ import { ObjectId } from 'mongodb'
 import { openDb } from '../db/database.js';
 import { broker, BrokerError } from '../config/broker.js'
 import { notifiera } from '../services/notify.js'
+import { kontrolleraRegler } from '../domain/policy.js'
+import { ledigaTider } from '../domain/availability.js'
+
+// Lediga tider för en resurs ett dygn (UTC): GET /api/resources/:id/availability?date=YYYY-MM-DD
+export async function getAvailability(req, res) {
+  if (!ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ error: 'Invalid resource ID' })
+  }
+
+  const dayStart = new Date(`${req.query.date}T00:00:00.000Z`)
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(req.query.date ?? '') || Number.isNaN(dayStart.getTime())) {
+    return res.status(400).json({ error: 'date must be YYYY-MM-DD' })
+  }
+
+  const dayEnd = new Date(dayStart.getTime() + 24 * 3600000)
+  const db = await openDb()
+  const resourceId = new ObjectId(req.params.id)
+
+  if (!await db.collection('resources').findOne({ _id: resourceId })) {
+    return res.status(404).json({ error: 'Resource not found' })
+  }
+
+  const bookings = await db.collection('bookings').find({
+    resourceId,
+    status: { $ne: 'cancelled' },
+    startsAt: { $lt: dayEnd },
+    endsAt: { $gt: dayStart }
+  }).toArray()
+
+  const free = ledigaTider(
+    bookings.map(b => ({ start: b.startsAt, end: b.endsAt })),
+    dayStart,
+    dayEnd
+  )
+
+  return res.json(free.map(f => ({ startsAt: f.start, endsAt: f.end })))
+}
+
+// Aktiv = bekräftad och inte slutad än
+function activeBookings(db, userId, excludeId) {
+  const query = {
+    bookedBy: userId,
+    status: 'confirmed',
+    endsAt: { $gt: new Date() }
+  }
+
+  if (excludeId) query._id = { $ne: excludeId }
+
+  return db.collection('bookings').find(query).toArray()
+}
 
 function formatBooking(resource, startsAt, endsAt) {
   const name = resource?.name ?? 'Okänd resurs'
@@ -65,6 +116,15 @@ export async function createBooking(req, res) {
     return res.status(400).json({
       error: 'Invalid time interval: start must be before end'
     })
+  }
+
+  const policy = kontrolleraRegler(
+    { start: new Date(startsAt), end: new Date(endsAt) },
+    await activeBookings(db, req.user._id)
+  )
+
+  if (!policy.ok) {
+    return res.status(422).json({ error: policy.fel })
   }
 
   const conflict = isExclusive(resource)
@@ -272,6 +332,17 @@ export async function updateBooking(req, res) {
     return res.status(400).json({
       error: 'Invalid time interval: start must be before end'
     })
+  }
+
+  // Passerad starttid är bara ett fel om starttiden faktiskt ändras
+  const policy = kontrolleraRegler(
+    { start: newStart, end: newEnd },
+    await activeBookings(db, req.user._id, bookingId),
+    updates.startsAt ? Date.now() : -Infinity
+  )
+
+  if (!policy.ok) {
+    return res.status(422).json({ error: policy.fel })
   }
 
   const resource = await db.collection('resources').findOne({

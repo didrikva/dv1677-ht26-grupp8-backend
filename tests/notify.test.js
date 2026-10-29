@@ -56,8 +56,8 @@ afterAll(async () => {
 function bookingBody() {
   return {
     resourceId: String(resource.insertedId),
-    startsAt: '2026-01-01T10:00:00.000Z',
-    endsAt: '2026-01-02T10:00:00.000Z',
+    startsAt: '2030-01-01T10:00:00.000Z',
+    endsAt: '2030-01-01T12:00:00.000Z',
     want: {}
   }
 }

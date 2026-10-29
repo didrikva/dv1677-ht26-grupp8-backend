@@ -55,7 +55,7 @@ afterAll(async () => {
   if (mongoServer) await mongoServer.stop()
 })
 
-const at = (h) => `2026-01-01T${String(h).padStart(2, '0')}:00:00.000Z`
+const at = (h) => `2030-01-01T${String(h).padStart(2, '0')}:00:00.000Z`
 
 function book(startH, endH) {
   return request(app)
@@ -118,5 +118,26 @@ describe('Booking overlap', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ startsAt: at(13), endsAt: at(15) })
       .expect(200)
+  })
+})
+
+describe('Availability', () => {
+  it('returns free slots for a day, excluding cancelled bookings', async () => {
+    await book(10, 12).expect(201)
+
+    const res = await request(app)
+      .get(`/api/resources/${resource.insertedId}/availability?date=2030-01-01`)
+      .expect(200)
+
+    expect(res.body).toEqual([
+      { startsAt: '2030-01-01T00:00:00.000Z', endsAt: at(10) },
+      { startsAt: at(12), endsAt: '2030-01-02T00:00:00.000Z' }
+    ])
+  })
+
+  it('rejects a bad date with 400', async () => {
+    await request(app)
+      .get(`/api/resources/${resource.insertedId}/availability?date=nonsense`)
+      .expect(400)
   })
 })
