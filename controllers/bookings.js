@@ -69,7 +69,11 @@ export async function createBooking(req, res) {
   await db.collection('bookings').insertOne(bookingDocument)
 
   // Skicka till alla som tittar på den här resursen
-  req.io.to(`resource:${String(resource._id)}`).emit('booking:created', booking)
+  if (req.io) {
+    req.io
+      .to(`resource:${String(resource._id)}`)
+      .emit('booking:created', booking)
+  }
 
   return res.status(201).json(booking)
   } catch (err) {
