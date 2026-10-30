@@ -229,7 +229,8 @@ export async function cancelBooking(req, res) {
   // Hitta endast bokningar som tillhör den inloggade användaren
   const booking = await db.collection('bookings').findOne({
     _id: bookingId,
-    bookedBy: req.user._id
+    bookedBy: req.user._id,
+    status: 'confirmed'
   })
 
   if (!booking) {
@@ -284,10 +285,8 @@ export async function getMyBookings(req, res) {
   const db = await openDb()
 
   const bookings = await db.collection('bookings')
-    .find({ bookedBy: req.user._id })
+    .find({ bookedBy: req.user._id }, { projection: { broker: 0 } })
     .toArray()
-  console.log('JWT user:', req.user)
-  console.log('User ID type:', typeof req.user._id)
 
   return res.json(bookings)
 }
@@ -305,7 +304,9 @@ export async function updateBooking(req, res) {
 
   const booking = await db.collection('bookings').findOne({
     _id: bookingId,
-    bookedBy: req.user._id
+    bookedBy: req.user._id,
+    status: 'confirmed'
+
   })
 
   if (!booking) {
@@ -367,14 +368,16 @@ export async function updateBooking(req, res) {
   }
 
   await db.collection('bookings').updateOne(
-    { _id: bookingId, bookedBy: req.user._id },
+    { _id: bookingId, bookedBy: req.user._id, status: 'confirmed' },
+    
     { $set: updates }
   )
 
-  const updatedBooking = await db.collection('bookings').findOne({
-    _id: bookingId,
-    bookedBy: req.user._id
-  })
+  const updatedBooking = await db.collection('bookings').findOne(
+    { _id: bookingId, bookedBy: req.user._id },
+    { projection: { broker: 0 } }
+
+  )
 
   return res.json(updatedBooking)
 }
