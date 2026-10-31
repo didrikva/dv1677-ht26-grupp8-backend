@@ -5,8 +5,7 @@ import { openDb } from './db/database.js';
 import { syncResources } from './domain/syncResources.js';
 
 const PORT = process.env.PORT || 3000;
-
-// Samma server som app.listen() skapade åt er — nu synlig
+    
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, { cors: { origin: '*' } });
