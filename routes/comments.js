@@ -4,8 +4,8 @@ import { requireAuth } from '../middleware/auth.js'
 
 const router = express.Router();
 
-router.post('/bookings/:bookingId/comments', requireAuth, createComment)
-router.get('/bookings/:bookingId/comments', requireAuth, getMyComments)
-router.delete('/comments/:id', requireAuth, deleteComment)
+router.post('/api/bookings/:bookingId/comments', requireAuth, createComment)
+router.get('/api/bookings/:bookingId/comments', requireAuth, getMyComments)
+router.delete('/api/comments/:id', requireAuth, deleteComment)
 
 export default router
