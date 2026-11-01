@@ -3,6 +3,7 @@ import cors from 'cors'
 import bookings from './routes/bookings.js'
 import resources from './routes/resources.js'
 import auth from './routes/auth.js'
+import comments from './routes/comments.js'
 
 const app = express()
 
@@ -26,6 +27,7 @@ app.use(express.json())
 app.use(bookings)
 app.use(resources)
 app.use(auth)
+app.use(comments)
 
 export default app;
 
