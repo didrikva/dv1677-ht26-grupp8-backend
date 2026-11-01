@@ -10,7 +10,15 @@ const PORT = process.env.PORT || 3000;
     
 const httpServer = createServer(app);
 
-const io = new Server(httpServer, { cors: { origin: '*' } });
+const io = new Server(httpServer, {
+  cors: {
+    origin: [
+      'http://localhost:5173',
+      'https://dv1677-laforge.nplab.bth.se'
+    ],
+    methods: ['GET', 'POST']
+  }
+})
 
 app.set('io', io);
 
