@@ -85,6 +85,11 @@ export async function deleteComment(req, res) {
     author: req.user._id
   })
 
+  req.io.to(`booking:${String(comment.bookingId)}`).emit(
+    'comment:deleted',
+    String(commentId)
+  )
+
   return res.json({ message: 'Comment deleted' })
 }
 
