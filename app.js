@@ -10,7 +10,8 @@ const app = express()
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://dv1677-laforge.nplab.bth.se'
+    'https://dv1677-laforge.nplab.bth.se',
+    'https://didrikva.github.io'
   ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
