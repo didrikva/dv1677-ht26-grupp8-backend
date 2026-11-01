@@ -1,5 +1,7 @@
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import { ObjectId } from 'mongodb';
+import jwt from 'jsonwebtoken';
 import app from './app.js';
 import { openDb } from './db/database.js';
 import { syncResources } from './domain/syncResources.js';
@@ -19,6 +21,22 @@ io.on('connection', (socket) => {
 
   socket.on('join', (resourceId) => {
     socket.join(`resource:${resourceId}`)
+  })
+
+  socket.on('join:booking', async (bookingId, acknowledge) => {
+    const user = jwt.verify(socket.handshake.auth.token, process.env.JWT_SECRET)
+
+    const booking = await (await openDb()).collection('bookings').findOne({
+    _id: new ObjectId(bookingId),
+    bookedBy: String(user._id)
+    })
+
+    if (!booking) {
+    return acknowledge({ ok: false })
+    }
+
+    socket.join(`booking:${bookingId}`)
+    acknowledge({ ok: true })
   })
 
   socket.on('disconnect', () => {
