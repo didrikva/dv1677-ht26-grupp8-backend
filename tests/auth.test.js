@@ -2,6 +2,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import request from 'supertest'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import { ObjectId } from 'mongodb'
+import app from '../app.js'
+import { closeDB, openDb } from '../db/database.js'
 
 vi.mock('../config/broker.js', () => ({
   broker: {
@@ -16,8 +18,6 @@ vi.mock('../config/broker.js', () => ({
   BrokerError: class BrokerError extends Error {}
 }))
 
-import app from '../app.js'
-import { closeDB, openDb } from '../db/database.js'
 
 let mongoServer
 let db
