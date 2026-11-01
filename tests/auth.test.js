@@ -123,6 +123,39 @@ describe('Auth', () => {
 })
 
 describe('Booking ownership', () => {
+  it('returns 401 without a token when listing bookings', async () => {
+    await request(app)
+      .get('/api/bookings/mine')
+      .expect(401)
+  })
+
+  it('returns 401 with a fabricated token when listing bookings', async () => {
+    await request(app)
+      .get('/api/bookings/mine')
+      .set('Authorization', 'Bearer inte-en-riktig-token')
+      .expect(401)
+  })
+
+  it('only lists bookings belonging to the authenticated user', async () => {
+    const tokenA = await loginAs('a@b.se')
+    const tokenB = await loginAs('b@b.se')
+    const userA = await db.collection('users').findOne({ email: 'a@b.se' })
+    const userB = await db.collection('users').findOne({ email: 'b@b.se' })
+
+    await db.collection('bookings').insertMany([
+      { bookedBy: String(userA._id) },
+      { bookedBy: String(userB._id) }
+    ])
+
+    const res = await request(app)
+      .get('/api/bookings/mine')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200)
+
+    expect(res.body).toHaveLength(1)
+    expect(res.body.every(booking => booking.bookedBy === String(userA._id))).toBe(true)
+  })
+
   it('only lists, updates and deletes own bookings', async () => {
     const tokenA = await loginAs('a@b.se')
     const tokenB = await loginAs('b@b.se')

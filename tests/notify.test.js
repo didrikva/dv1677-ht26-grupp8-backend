@@ -1,6 +1,9 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import request from 'supertest'
 import { MongoMemoryServer } from 'mongodb-memory-server'
+import app from '../app.js'
+import { closeDB, openDb } from '../db/database.js'
+import { notifiera } from '../services/notify.js'
 
 vi.mock('../config/broker.js', () => ({
   broker: {
@@ -13,10 +16,6 @@ vi.mock('../config/broker.js', () => ({
 vi.mock('../services/notify.js', () => ({
   notifiera: vi.fn()
 }))
-
-import app from '../app.js'
-import { closeDB, openDb } from '../db/database.js'
-import { notifiera } from '../services/notify.js'
 
 let mongoServer
 let db
@@ -63,6 +62,16 @@ function bookingBody() {
 }
 
 describe('Notifications', () => {
+  it('creates a booking and calls the notification service', async () => {
+    await request(app)
+      .post('/api/bookings')
+      .set('Authorization', `Bearer ${token}`)
+      .send(bookingBody())
+      .expect(201)
+
+    expect(notifiera).toHaveBeenCalledOnce()
+  })
+
   it('notifies when a booking is created', async () => {
     await request(app)
       .post('/api/bookings')
@@ -73,6 +82,16 @@ describe('Notifications', () => {
     expect(notifiera).toHaveBeenCalledOnce()
     expect(notifiera.mock.calls[0][0]).toBe('Bokning bekräftad')
     expect(notifiera.mock.calls[0][1]).toContain('Test resource')
+  })
+
+  it('creates a booking even if the notification fails', async () => {
+    notifiera.mockRejectedValueOnce(new Error('nätverksfel'))
+
+    await request(app)
+      .post('/api/bookings')
+      .set('Authorization', `Bearer ${token}`)
+      .send(bookingBody())
+      .expect(201)
   })
 
   it('notifies when a booking is cancelled', async () => {
