@@ -20,4 +20,4 @@ COPY . .
 EXPOSE 3000
 
 # Kommandot som körs när containern startar
-CMD ["node", "app.js"]
+CMD ["node", "server.js"]

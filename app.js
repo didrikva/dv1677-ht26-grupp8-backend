@@ -1,94 +1,129 @@
-import 'dotenv/config';
-import express from 'express';
-import path from 'path';
-import morgan from 'morgan';
-import cors from 'cors';
-import resources from "./resources.js";
-import bookings from "./bookings.js";
-import { openDb } from "./db/database.js";
+import express from 'express'
+import cors from 'cors'
+import bookings from './routes/bookings.js'
+import resources from './routes/resources.js'
+import auth from './routes/auth.js'
+import comments from './routes/comments.js'
 
-const port = process.env.PORT;
-const app = express();
+const app = express()
 
-app.disable('x-powered-by');
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://dv1677-laforge.nplab.bth.se',
+    'https://didrikva.github.io'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}))
 
-if (process.env.NODE_ENV !== 'test') {
-    app.use(morgan('combined'));
-}
+app.use((req, res, next) => {
+  req.io = app.get('io')
+  next()
+})
 
-// --- Resurser ---
+app.use(express.urlencoded({ extended: true }))
+app.use(express.json())
 
-app.get('/api/resources', async (req, res) => {
-    const result = await resources.getAll();
-    return res.json(result);
-});
+app.use(bookings)
+app.use(resources)
+app.use(auth)
+app.use(comments)
 
-// app.get('/resources/new', async (req, res) => {
-//     return res.render("resource-form", { resource: {} });
+export default app;
+
+
+// import 'dotenv/config';
+// import express from 'express';
+// import path from 'path';
+// import morgan from 'morgan';
+// import cors from 'cors';
+// import resources from "./resources.js";
+// import bookings from "./bookings.js";
+// import { openDb } from "./db/database.js";
+
+// const port = process.env.PORT;
+// const app = express();
+
+// app.disable('x-powered-by');
+// app.use(express.json());
+// app.use(express.urlencoded({ extended: true }));
+// app.use(cors());
+
+// if (process.env.NODE_ENV !== 'test') {
+//     app.use(morgan('combined'));
+// }
+
+// // --- Resurser ---
+
+// app.get('/api/resources', async (req, res) => {
+//     const result = await resources.getAll();
+//     return res.json(result);
 // });
 
-app.post('/api/resources', async (req, res) => {
-    const result = await resources.addOne(req.body);
-    return res.status(201).json(result);
-});
+// // app.get('/resources/new', async (req, res) => {
+// //     return res.render("resource-form", { resource: {} });
+// // });
 
-app.get('/api/resources/:id', async (req, res) => {
-    const resource = await resources.getOne(req.params.id);
-    const resourceBookings = await bookings.getByResource(req.params.id);
+// app.post('/api/resources', async (req, res) => {
+//     const result = await resources.addOne(req.body);
+//     return res.status(201).json(result);
+// });
 
-    return res.json({
-        resource,
-        bookings: resourceBookings
-    });
-});
+// app.get('/api/resources/:id', async (req, res) => {
+//     const resource = await resources.getOne(req.params.id);
+//     const resourceBookings = await bookings.getByResource(req.params.id);
 
-app.put('/api/resources/:id', async (req, res) => {
-    const result = await resources.updateOne(req.params.id, req.body);
-    return res.json(result);
-});
-
-// app.get('/api/resources/:id/edit', async (req, res) => {
-//     return res.render("resource-form", {
-//         resource: await resources.getOne(req.params.id)
+//     return res.json({
+//         resource,
+//         bookings: resourceBookings
 //     });
 // });
 
-app.delete('/api/resources/:id', async (req, res) => {
-    const result = await resources.deleteOne(req.params.id);
-    return res.json(result);
-});
+// app.put('/api/resources/:id', async (req, res) => {
+//     const result = await resources.updateOne(req.params.id, req.body);
+//     return res.json(result);
+// });
 
-// --- Bokningar ---
+// // app.get('/api/resources/:id/edit', async (req, res) => {
+// //     return res.render("resource-form", {
+// //         resource: await resources.getOne(req.params.id)
+// //     });
+// // });
 
-app.post('/api/bookings', async (req, res) => {
-    const result = await bookings.addOne(req.body);
-    return res.status(201).json(result);
-});
+// app.delete('/api/resources/:id', async (req, res) => {
+//     const result = await resources.deleteOne(req.params.id);
+//     return res.json(result);
+// });
 
-app.delete('/api/bookings/:id', async (req, res) => {
-    const result = await bookings.deleteOne(req.params.id);
-    return res.json(result);
-});
+// // --- Bokningar ---
 
-app.put('/api/bookings/:id', async (req, res) => {
-    const result = await bookings.updateOne(req.params.id, req.body);
-    return res.json(result);
-});
+// app.post('/api/bookings', async (req, res) => {
+//     const result = await bookings.addOne(req.body);
+//     return res.status(201).json(result);
+// });
 
-if (process.env.NODE_ENV !== 'test') {
-    openDb()
-        .then(() => {
-            app.listen(port, () => {
-                console.log(`Proxmox Booking app listening on port ${port}`);
-            });
-        })
-        .catch((error) => {
-            console.error('Could not connect to MongoDB:', error);
-            process.exitCode = 1;
-        });
-}
+// app.delete('/api/bookings/:id', async (req, res) => {
+//     const result = await bookings.deleteOne(req.params.id);
+//     return res.json(result);
+// });
 
-export default app;
+// app.put('/api/bookings/:id', async (req, res) => {
+//     const result = await bookings.updateOne(req.params.id, req.body);
+//     return res.json(result);
+// });
+
+// if (process.env.NODE_ENV !== 'test') {
+//     openDb()
+//         .then(() => {
+//             app.listen(port, () => {
+//                 console.log(`Proxmox Booking app listening on port ${port}`);
+//             });
+//         })
+//         .catch((error) => {
+//             console.error('Could not connect to MongoDB:', error);
+//             process.exitCode = 1;
+//         });
+// }
+
+// export default app;
