@@ -84,11 +84,11 @@ Vi började på frontend deployment och det gick ganska snabbt och enkelt efters
 # Redovisning projekt
 
 ## Brokern
-Var: Integrationen finns i domain/ och hanteras framför allt genom syncResources.js samt bokningslogiken i controllers/bookings.js. Konfigurationen för brokern hanteras via miljövariabler.
+- Var: Integrationen finns i `domain/` och hanteras framför allt genom `syncResources.js` samt bokningslogiken i `controllers/bookings.js`. Konfigurationen för brokern hanteras via miljövariabler.
 
-Hur: Vi använder brokern för att hämta information om tillgängliga resurser och genomföra bokningar hos de externa leverantörerna Proxmox, MAAS och OpenStack. Vid synkronisering hämtas resursernas information genom inventory. När en användare bokar en resurs skickas en förfrågan till brokern med allocate, och vid avbokning används withdraw. På så sätt hanteras själva tilldelningen av resurser av brokern i stället för direkt mot respektive leverantör.
+- Hur: Vi använder brokern för att hämta information om tillgängliga resurser och genomföra bokningar hos de externa leverantörerna Proxmox, MAAS och OpenStack. Vid synkronisering hämtas resursernas information genom inventory. När en användare bokar en resurs skickas en förfrågan till brokern med allocate, och vid avbokning används withdraw. På så sätt hanteras själva tilldelningen av resurser av brokern i stället för direkt mot respektive leverantör.
 
-Valde bort: Att kommunicera direkt med varje resurs API. Genom att använda brokern får vi ett gemensamt gränssnitt för flera olika resurser och slipper implementera separat logik för varje tjänst.
+- Valde bort: Att kommunicera direkt med varje resurs API. Genom att använda brokern får vi ett gemensamt gränssnitt för flera olika resurser och slipper implementera separat logik för varje tjänst.
 
 ## Krav 1 – JWT-autentisering
 
@@ -101,19 +101,19 @@ Valde bort: Att kommunicera direkt med varje resurs API. Genom att använda brok
 
 ## Krav 2 — websocket och realtid
 
-Var: WebSocket-funktionaliteten implementeras i server.js med Socket.IO. Händelser för kommentarer hanteras i `controllers/comments.js` samt `controller/bookings`, där uppdateringar skickas till anslutna klienter. Tester i `tests/socket.test.js`
+- Var: WebSocket-funktionaliteten implementeras i server.js med Socket.IO. Händelser för kommentarer hanteras i `controllers/comments.js` samt `controller/bookings`, där uppdateringar skickas till anslutna klienter. Tester i `tests/socket.test.js`
 
-Hur: Vi använder Socket.IO för att skicka uppdateringar i realtid när kommentarer skapas eller tas bort. Klienter ansluter till servern och kan gå med i ett rum kopplat till en specifik bokning. När en kommentar skapas skickas händelsen comment:created till klienterna i rummet. När en kommentar tas bort skickas comment:deleted. På så sätt behöver användaren inte ladda om sidan för att se att kommentarerna har uppdaterats. När en bokning sker skickas booking:created för att uppdatera andra anslutna i rummet om att resurserna är upptagna. Anslutningen till ett bokningsrum kontrolleras med JWT och användarens ägarskap av bokningen.
+- Hur: Vi använder Socket.IO för att skicka uppdateringar i realtid när kommentarer skapas eller tas bort. Klienter ansluter till servern och kan gå med i ett rum kopplat till en specifik bokning. När en kommentar skapas skickas händelsen comment:created till klienterna i rummet. När en kommentar tas bort skickas comment:deleted. På så sätt behöver användaren inte ladda om sidan för att se att kommentarerna har uppdaterats. När en bokning sker skickas booking:created för att uppdatera andra anslutna i rummet om att resurserna är upptagna. Anslutningen till ett bokningsrum kontrolleras med JWT och användarens ägarskap av bokningen.
 
-Valde bort: Att uppdatera kommentarerna genom att regelbundet hämta dem från API. WebSocket ger i stället möjlighet att skicka uppdateringar direkt när något händer och minskar behovet av upprepade API-anrop. 
+- Valde bort: Att uppdatera kommentarerna genom att regelbundet hämta dem från API. WebSocket ger i stället möjlighet att skicka uppdateringar direkt när något händer och minskar behovet av upprepade API-anrop. 
 
 ## Krav 3 — kommentarer
 
-Var: Implementeringen finns i `controllers/comments.js` och `routes/comments.js`, där API-anropen för att skapa, hämta och ta bort kommentarer hanteras. Kommentarerna sparas i en egen tabell i MongoDB. Tester i `tests/comments.test.js`
+- Var: Implementeringen finns i `controllers/comments.js` och `routes/comments.js`, där API-anropen för att skapa, hämta och ta bort kommentarer hanteras. Kommentarerna sparas i en egen tabell i MongoDB. Tester i `tests/comments.test.js`
 
-Hur: Användare kan skapa och läsa kommentarer på sina egna bokningar samt ta bort sina egna kommentarer. Varje kommentar kopplas till en bokning genom bookingId och till användaren som skrev den genom author. Backend kontrollerar att användaren äger bokningen innan kommentarer hämtas eller skapas. Vid borttagning kontrolleras även att användaren är den som skrivit kommentaren. Om en bokning avbokas tas dess kommentarer också bort. Tillsammans med WebSocket-funktionaliteten uppdateras kommentarerna direkt hos andra användare som tittar på samma bokning.
+- Hur: Användare kan skapa och läsa kommentarer på sina egna bokningar samt ta bort sina egna kommentarer. Varje kommentar kopplas till en bokning genom bookingId och till användaren som skrev den genom author. Backend kontrollerar att användaren äger bokningen innan kommentarer hämtas eller skapas. Vid borttagning kontrolleras även att användaren är den som skrivit kommentaren. Om en bokning avbokas tas dess kommentarer också bort. Tillsammans med WebSocket-funktionaliteten uppdateras kommentarerna direkt hos andra användare som tittar på samma bokning.
 
-Valde bort: Att tillåta kommentarer på resurser i allmänhet i stället för på specifika bokningar. Genom att koppla kommentarerna till bokningar kan vi begränsa åtkomsten till berörda användare och hålla diskussionen kopplad till rätt bokning. Detta skulle också göra bokningar publika för att andra ska kunna kommentera bokningar, men vi kom fram till att det finns ingen anlending för andra tat kunna kommentera din bokning.
+- Valde bort: Att tillåta kommentarer på resurser i allmänhet i stället för på specifika bokningar. Genom att koppla kommentarerna till bokningar kan vi begränsa åtkomsten till berörda användare och hålla diskussionen kopplad till rätt bokning. Detta skulle också göra bokningar publika för att andra ska kunna kommentera bokningar, men vi kom fram till att det finns ingen anlending för andra tat kunna kommentera din bokning.
 
 ## Krav 4 — Projektspecifikt
 - var: Logiken ligger i egna moduler i `domain/`: `overlap.js` (krockar), `availability.js` (lediga tider) och `policy.js` (regler). `controllers/bookings.js` limmar ihop allt med databasen och brokern. Tester finns i `tests/domain.test.js` och `tests/overlap-api.test.js`.
@@ -132,8 +132,8 @@ Valde bort: Att tillåta kommentarer på resurser i allmänhet i stället för p
 
 ## Krav 6 — fördjupad testing
 
-Var: Testerna finns i `tests/` och använder Vitest. Vi har bland annat tester för autentisering, bokningar, domänlogik, notifikationer, integration och WebSocket-funktionalitet.
+- Var: Testerna finns i `tests/` och använder Vitest. Vi har bland annat tester för autentisering, bokningar, domänlogik, notifikationer, integration och WebSocket-funktionalitet.
 
-Hur: Vi har delat upp testerna för att kontrollera olika delar av applikationen. En del tester kontrollerar enskilda funktioner och regler, exempelvis krockhantering och tillgänglighet. Andra testar API beteende genom att skicka HTTP-förfrågningar och kontrollera svar, statuskoder och data. Vi har även tester för autentisering och notifikationer. För WebSocket har vi ett test där två klienter ansluter till samma bokningsrum och kontrollerar att händelser om skapade och borttagna kommentarer skickas vidare till den andra klienten. Vi försökte uppnå hög testprocent på de flesta dlearna och vi tycker att vi lyckades bra. Några filer har 100% medans andra ligger runt 80-90%. Vi gjorde många olika tester för att testa de flesta möjliga utfallen.
+- Hur: Vi har delat upp testerna för att kontrollera olika delar av applikationen. En del tester kontrollerar enskilda funktioner och regler, exempelvis krockhantering och tillgänglighet. Andra testar API beteende genom att skicka HTTP-förfrågningar och kontrollera svar, statuskoder och data. Vi har även tester för autentisering och notifikationer. För WebSocket har vi ett test där två klienter ansluter till samma bokningsrum och kontrollerar att händelser om skapade och borttagna kommentarer skickas vidare till den andra klienten. Vi försökte uppnå hög testprocent på de flesta dlearna och vi tycker att vi lyckades bra. Några filer har 100% medans andra ligger runt 80-90%. Vi gjorde många olika tester för att testa de flesta möjliga utfallen.
 
-Valde bort: Att enbart förlita oss på manuella tester. Automatiserade tester gör det möjligt att kontrollera att funktionaliteten fortsätter fungera när koden ändras och gör det enklare att upptäcka fel tidigt, framförallt kan detta leda till problem i frontend testerna.
+- Valde bort: Att enbart förlita oss på manuella tester. Automatiserade tester gör det möjligt att kontrollera att funktionaliteten fortsätter fungera när koden ändras och gör det enklare att upptäcka fel tidigt, framförallt kan detta leda till problem i frontend testerna.
