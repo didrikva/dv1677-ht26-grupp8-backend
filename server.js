@@ -32,20 +32,23 @@ io.on('connection', (socket) => {
   })
 
   socket.on('join:booking', async (bookingId, acknowledge) => {
-    const user = jwt.verify(socket.handshake.auth.token, process.env.JWT_SECRET)
+    try {
+        const user = jwt.verify(socket.handshake.auth.token, process.env.JWT_SECRET)
 
-    const booking = await (await openDb()).collection('bookings').findOne({
-    _id: new ObjectId(bookingId),
-    bookedBy: String(user._id)
-    })
+        const booking = await (await openDb()).collection('bookings').findOne({
+        _id: new ObjectId(bookingId),
+        bookedBy: String(user._id)
+        })
 
-    if (!booking) {
-    return acknowledge({ ok: false })
+        if (!booking) return acknowledge?.({ ok: false })
+
+        socket.join(`booking:${bookingId}`)
+        acknowledge?.({ ok: true })
+    } catch (error) {
+        console.error('Could not join booking:', error)
+        acknowledge?.({ ok: false })
     }
-
-    socket.join(`booking:${bookingId}`)
-    acknowledge({ ok: true })
-  })
+    })
 
   socket.on('disconnect', () => {
     console.log('frånkopplad:', socket.id);
