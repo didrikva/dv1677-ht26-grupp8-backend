@@ -266,6 +266,10 @@ export async function cancelBooking(req, res) {
     }
   }
 
+  await db.collection('comments').deleteMany({
+    bookingId: booking._id
+  })
+
   await db.collection('bookings').updateOne(
     {
       _id: booking._id,

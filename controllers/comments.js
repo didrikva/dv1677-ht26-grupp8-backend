@@ -37,10 +37,16 @@ export async function createComment(req, res) {
 
   const result = await db.collection('comments').insertOne(comment)
 
-  return res.status(201).json({
+  const createdComment = {
     _id: result.insertedId,
     ...comment
-  })
+  }
+
+  req.io
+    ?.to(`booking:${String(bookingId)}`)
+    .emit('comment:created', createdComment)
+
+  return res.status(201).json(createdComment)
 }
 
 export async function deleteComment(req, res) {
