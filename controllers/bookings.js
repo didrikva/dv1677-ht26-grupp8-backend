@@ -1,0 +1,387 @@
+import { ObjectId } from 'mongodb'
+import { openDb } from '../db/database.js';
+import { broker, BrokerError } from '../config/broker.js'
+import { notifiera } from '../services/notify.js'
+import { kontrolleraRegler } from '../domain/policy.js'
+import { ledigaTider } from '../domain/availability.js'
+
+// Lediga tider för en resurs ett dygn (UTC): GET /api/resources/:id/availability?date=YYYY-MM-DD
+export async function getAvailability(req, res) {
+  if (!ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ error: 'Invalid resource ID' })
+  }
+
+  const dayStart = new Date(`${req.query.date}T00:00:00.000Z`)
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(req.query.date ?? '') || Number.isNaN(dayStart.getTime())) {
+    return res.status(400).json({ error: 'date must be YYYY-MM-DD' })
+  }
+
+  const dayEnd = new Date(dayStart.getTime() + 24 * 3600000)
+  const db = await openDb()
+  const resourceId = new ObjectId(req.params.id)
+
+  if (!await db.collection('resources').findOne({ _id: resourceId })) {
+    return res.status(404).json({ error: 'Resource not found' })
+  }
+
+  const bookings = await db.collection('bookings').find({
+    resourceId,
+    status: { $ne: 'cancelled' },
+    startsAt: { $lt: dayEnd },
+    endsAt: { $gt: dayStart }
+  }).toArray()
+
+  const free = ledigaTider(
+    bookings.map(b => ({ start: b.startsAt, end: b.endsAt })),
+    dayStart,
+    dayEnd
+  )
+
+  return res.json(free.map(f => ({ startsAt: f.start, endsAt: f.end })))
+}
+
+// Aktiv = bekräftad och inte slutad än
+function activeBookings(db, userId, excludeId) {
+  const query = {
+    bookedBy: userId,
+    status: 'confirmed',
+    endsAt: { $gt: new Date() }
+  }
+
+  if (excludeId) query._id = { $ne: excludeId }
+
+  return db.collection('bookings').find(query).toArray()
+}
+
+function formatBooking(resource, startsAt, endsAt) {
+  const name = resource?.name ?? 'Okänd resurs'
+  return `${name}\n${new Date(startsAt).toISOString()} – ${new Date(endsAt).toISOString()}`
+}
+
+// Mongo-varianten av overlappar(): start_a < slut_b OCH start_b < slut_a
+function findConflict(db, resourceId, startsAt, endsAt, excludeId) {
+  const query = {
+    resourceId,
+    status: { $ne: 'cancelled' },
+    startsAt: { $lt: endsAt },
+    endsAt: { $gt: startsAt }
+  }
+
+  if (excludeId) query._id = { $ne: excludeId }
+
+  return db.collection('bookings').findOne(query)
+}
+
+function validInterval(start, end) {
+  return !Number.isNaN(start.getTime()) &&
+    !Number.isNaN(end.getTime()) &&
+    start < end
+}
+
+// Bara MAAS är odelbar (en bokning åt gången). Proxmox och OpenStack är
+// delbara: där avgör brokern kapaciteten (CAPACITY_EXCEEDED), inte vi.
+function isExclusive(resource) {
+  return (resource?.provider ?? resource?.type) === 'maas'
+}
+
+export async function createBooking(req, res) {
+  const resourceId = req.body.resourceId ?? req.body.resource_id
+  const startsAt = req.body.startsAt ?? req.body.start_time
+  const endsAt = req.body.endsAt ?? req.body.end_time
+  const { want } = req.body
+  const db = await openDb()
+  let resource
+
+  try {
+    resource = await db.collection('resources').findOne({
+      _id: new ObjectId(resourceId)
+    })
+  } catch {
+    return res.status(400).json({ error: 'Invalid resource ID' })
+  }
+
+  if (!resource) {
+    return res.status(404).json({ error: 'Resource not found' })
+  }
+  const provider = resource.provider ?? resource.type
+
+  if (!provider) {
+    return res.status(400).json({
+      error: 'Resource has no provider or type'
+    })
+  }
+
+  if (!validInterval(new Date(startsAt), new Date(endsAt))) {
+    return res.status(400).json({
+      error: 'Invalid time interval: start must be before end'
+    })
+  }
+
+  const policy = kontrolleraRegler(
+    { start: new Date(startsAt), end: new Date(endsAt) },
+    await activeBookings(db, req.user._id)
+  )
+
+  if (!policy.ok) {
+    return res.status(422).json({ error: policy.fel })
+  }
+
+  const conflict = isExclusive(resource)
+    ? await findConflict(
+        db,
+        resource._id,
+        new Date(startsAt),
+        new Date(endsAt)
+      )
+    : null
+
+  if (conflict) {
+    return res.status(409).json({
+      error: 'Tiden är redan bokad',
+      krockarMed: conflict._id
+    })
+  }
+
+  const bookingId = new ObjectId()
+  const user = String(req.user._id)
+  const payload = provider === 'maas'
+    ? {
+        systemId: resource.externalId,
+        user,
+        startsAt,
+        endsAt,
+        idempotencyKey: String(bookingId)
+      }
+    : {
+        want,
+        user,
+        startsAt,
+        endsAt,
+        idempotencyKey: String(bookingId)
+      }
+
+  try {
+    const { allocation } = await broker.allocate(provider, payload)
+
+    const booking = {
+        _id: bookingId,
+        resourceId: resource._id,
+        bookedBy: req.user._id,
+        startsAt: new Date(startsAt),
+        endsAt: new Date(endsAt),
+        amount_cpu: Number(want?.vcpus ?? 0),
+        amount_ram: Number(want?.ramMb ?? 0),
+      ...(want?.diskGb != null
+        ? { amount_disk: Number(want.diskGb) }
+        : {}),
+        status: 'confirmed'
+      }
+      const bookingDocument = {
+    ...booking,
+    broker: {
+      allocationId: allocation.id,
+      secret: allocation.secret
+    }
+  }
+
+  await db.collection('bookings').insertOne(bookingDocument)
+
+  // Skicka till alla som tittar på den här resursen
+  if (req.io) {
+    req.io
+      .to(`resource:${String(resource._id)}`)
+      .emit('booking:created', booking)
+  }
+
+  // Ingen await: notisen ska inte sinka svaret (notifiera fångar alla fel själv)
+  notifiera('Bokning bekräftad', formatBooking(resource, booking.startsAt, booking.endsAt), 0x2ecc71)
+
+  return res.status(201).json(booking)
+  } catch (err) {
+    if (!(err instanceof BrokerError)) throw err
+
+    if (err.status === 409) {
+      return res.status(409).json({
+        error: 'Booking denied',
+        code: err.code
+      })
+    }
+
+    return res.status(503).json({
+      error: 'Booking service unavailable',
+      code: err.code
+    })
+  }
+}
+
+export async function cancelBooking(req, res) {
+  const db = await openDb()
+
+  let bookingId
+
+  try {
+    bookingId = new ObjectId(req.params.id)
+  } catch {
+    return res.status(404).json({ error: 'Not found' })
+  }
+
+  // Hitta endast bokningar som tillhör den inloggade användaren
+  const booking = await db.collection('bookings').findOne({
+    _id: bookingId,
+    bookedBy: req.user._id,
+    status: 'confirmed'
+  })
+
+  if (!booking) {
+    return res.status(404).json({ error: 'Not found' })
+  }
+
+  const resource = await db.collection('resources').findOne({
+    _id: booking.resourceId
+  })
+
+  if (booking.broker?.secret) {
+    try {
+      const provider = resource?.provider ?? resource?.type
+
+      if (!provider) {
+        return res.status(400).json({
+          error: 'Resource has no provider or type'
+        })
+      }
+
+      await broker.withdraw(
+        provider,
+        booking.broker.allocationId,
+        booking.broker.secret
+      )
+    } catch (err) {
+      if (!(err instanceof BrokerError)) throw err
+
+      return res.status(503).json({
+        error: 'Could not cancel at provider',
+        code: err.code
+      })
+    }
+  }
+
+  await db.collection('comments').deleteMany({
+    bookingId: booking._id
+  })
+
+  await db.collection('bookings').updateOne(
+    {
+      _id: booking._id,
+      bookedBy: req.user._id
+    },
+    {
+      $set: { status: 'cancelled' }
+    }
+  )
+
+  notifiera('Bokning avbokad', formatBooking(resource, booking.startsAt, booking.endsAt), 0xe74c3c)
+
+  return res.json({ message: 'Booking cancelled' })
+}
+
+export async function getMyBookings(req, res) {
+  const db = await openDb()
+
+  const bookings = await db.collection('bookings')
+    .find({ bookedBy: req.user._id }, { projection: { broker: 0 } })
+    .toArray()
+
+  return res.json(bookings)
+}
+
+export async function updateBooking(req, res) {
+  const db = await openDb()
+
+  let bookingId
+
+  try {
+    bookingId = new ObjectId(req.params.id)
+  } catch {
+    return res.status(404).json({ error: 'Booking not found' })
+  }
+
+  const booking = await db.collection('bookings').findOne({
+    _id: bookingId,
+    bookedBy: req.user._id,
+    status: 'confirmed'
+
+  })
+
+  if (!booking) {
+    return res.status(404).json({ error: 'Booking not found' })
+  }
+
+  const allowedFields = ['startsAt', 'endsAt']
+  const updates = {}
+
+  for (const field of allowedFields) {
+    if (req.body[field] !== undefined) {
+      updates[field] = new Date(req.body[field])
+    }
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({ error: 'No valid fields to update' })
+  }
+
+  const newStart = updates.startsAt ?? booking.startsAt
+  const newEnd = updates.endsAt ?? booking.endsAt
+
+  if (!validInterval(newStart, newEnd)) {
+    return res.status(400).json({
+      error: 'Invalid time interval: start must be before end'
+    })
+  }
+
+  // Passerad starttid är bara ett fel om starttiden faktiskt ändras
+  const policy = kontrolleraRegler(
+    { start: newStart, end: newEnd },
+    await activeBookings(db, req.user._id, bookingId),
+    updates.startsAt ? Date.now() : -Infinity
+  )
+
+  if (!policy.ok) {
+    return res.status(422).json({ error: policy.fel })
+  }
+
+  const resource = await db.collection('resources').findOne({
+    _id: booking.resourceId
+  })
+
+  const conflict = isExclusive(resource)
+    ? await findConflict(
+        db,
+        booking.resourceId,
+        newStart,
+        newEnd,
+        bookingId
+      )
+    : null
+
+  if (conflict) {
+    return res.status(409).json({
+      error: 'Tiden är redan bokad',
+      krockarMed: conflict._id
+    })
+  }
+
+  await db.collection('bookings').updateOne(
+    { _id: bookingId, bookedBy: req.user._id, status: 'confirmed' },
+    
+    { $set: updates }
+  )
+
+  const updatedBooking = await db.collection('bookings').findOne(
+    { _id: bookingId, bookedBy: req.user._id },
+    { projection: { broker: 0 } }
+
+  )
+
+  return res.json(updatedBooking)
+}
